@@ -16,7 +16,7 @@ def prepare_dataset():
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.resize(image, (IMAGE_DIMS, IMAGE_DIMS))
             image = image/255.0
-            image = image.flatten()
+            image = np.transpose(image, (2, 0, 1))  # HWC to CHW
             data.append(image)
 
     data = np.array(data)
@@ -29,6 +29,6 @@ data = np.load("./data/arrays.npz")["arr_0"]
 
 print(data.shape)
 image = data[np.random.randint(0, len(data))]
-image = image.reshape(IMAGE_DIMS, IMAGE_DIMS, 3)
+image = np.transpose(image, (1, 2, 0))
 plt.imshow(image)
 plt.show()

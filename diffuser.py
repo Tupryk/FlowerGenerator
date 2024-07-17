@@ -3,6 +3,7 @@ import numpy as np
 from models import Diffuser, LATENT_DIM
 
 IMAGE_DIMS = 64
+DIFFUSION_STEPS = 256
 np_data = np.load("./data/arrays_latent.npz")["arr_0"]
 device = "cpu"
 dataset = torch.utils.data.TensorDataset(torch.Tensor(np_data))
@@ -11,18 +12,19 @@ loader = torch.utils.data.DataLoader(dataset, batch_size=50, shuffle=True)
 
 def get_alpha_betas(N: int):
     """Schedule from the original paper."""
-    beta_min = 0.1
+    beta_min = .1
     beta_max = 20.
     betas = np.array([beta_min/N + i/(N*(N-1))*(beta_max-beta_min) for i in range(N)])
     alpha_bars = np.cumprod(1 - betas)
     return alpha_bars, betas
 
 
-def train(nepochs: int=1_000, denoising_steps: int=256, save_as: str="./models/diffuser.pth"):
+def train(nepochs: int=1_000, denoising_steps: int=DIFFUSION_STEPS, save_as: str="./models/diffuser.pth"):
     """Alg 1 from the DDPM paper"""
     model = Diffuser()
+    model.load_state_dict(torch.load('./models/diffuser.pth'))
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     alpha_bars, _ = get_alpha_betas(denoising_steps)      # Precompute alphas
     losses = []
     for epoch in range(nepochs):
@@ -43,7 +45,7 @@ def train(nepochs: int=1_000, denoising_steps: int=256, save_as: str="./models/d
             loss.backward()
             optimizer.step()
 
-        if (epoch+1) % 10 == 0:
+        if (epoch+1) % 1 == 0:
             mean_loss = np.mean(np.array(losses))
             losses = []
             print("Epoch %d,\t Loss %f " % (epoch+1, mean_loss))
@@ -52,7 +54,7 @@ def train(nepochs: int=1_000, denoising_steps: int=256, save_as: str="./models/d
     return model
 
 
-def sample(model, n_samples: int=50, n_steps: int=100):
+def sample(model, n_samples: int=50, n_steps: int=DIFFUSION_STEPS):
     """Alg 2 from the DDPM paper."""
     x_t = torch.randn((n_samples, LATENT_DIM)).to(device)
     alpha_bars, betas = get_alpha_betas(n_steps)
@@ -68,7 +70,7 @@ def sample(model, n_samples: int=50, n_steps: int=100):
     return x_t
 
 if __name__ == "__main__":
-    trained_model = train(1_000)
+    trained_model = train(100)
 
-    samples = sample(trained_model).detach().cpu().numpy()
-    samples.shape
+    samples = sample(trained_model, 1).detach().cpu().numpy()
+    print(samples)

@@ -11,16 +11,22 @@ def generate_flower():
     diffuser = Diffuser()
     diffuser.load_state_dict(torch.load('./models/diffuser.pth'))
     diffuser.eval()
-    latent_im = sample(diffuser, n_samples=1)
+    latent_im = sample(diffuser, n_samples=1).detach().cpu().numpy()
+    print(latent_im)
+    latent_im = latent_im.reshape(1, 128, 4, 4)
+    latent_im = torch.Tensor(latent_im)
 
     autoencoder = Autoencoder()
     autoencoder.load_state_dict(torch.load('./models/autoencoder.pth'))
     autoencoder.eval()
 
-    image = autoencoder.dencode(latent_im).detach().cpu().numpy()
+    print(latent_im)
+    image = autoencoder.decoder(latent_im)
 
-    image = image.reshape(IMAGE_DIMS, IMAGE_DIMS, 3)
-    image = (image + 1.) * .5
+    image = image.detach().cpu().numpy()
+    print(image)
+    image = np.maximum(image, 0)[0]
+    image = np.transpose(image, (1, 2, 0))
     return image
 
 

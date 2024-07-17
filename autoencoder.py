@@ -10,7 +10,7 @@ dataset = torch.utils.data.TensorDataset(torch.Tensor(np_data))
 loader = torch.utils.data.DataLoader(dataset, batch_size=50, shuffle=True)
 
 
-def train(nepochs: int = 10, save_as: str="./models/autoencoder.pth"):
+def train(nepochs: int=10, save_as: str="./models/autoencoder.pth"):
     model = Autoencoder()
     model.load_state_dict(torch.load('./models/autoencoder.pth'))
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -38,19 +38,19 @@ def train(nepochs: int = 10, save_as: str="./models/autoencoder.pth"):
     return model
 
 if __name__ == "__main__":
-    model = train(100)
-    # model = Autoencoder()
-    # model.load_state_dict(torch.load('./models/autoencoder.pth'))
+    # model = train(100)
+    model = Autoencoder()
+    model.load_state_dict(torch.load('./models/autoencoder.pth'))
     model.eval()
 
     # See results
     image = np_data[np.random.randint(0, len(np_data))]
     y = model.forward(torch.Tensor(image))
 
-    image = image.reshape(IMAGE_DIMS, IMAGE_DIMS, 3)
+    image = np.transpose(image, (1, 2, 0))
     y = y.detach().cpu().numpy()
-    y = (y + 1.) * .5
-    y = y.reshape(IMAGE_DIMS, IMAGE_DIMS, 3)
+    y = np.maximum(y, 0)
+    y = np.transpose(y, (1, 2, 0))
 
     fig, ax = plt.subplots(1, 2, figsize=(10, 5))
     ax[0].imshow(image)

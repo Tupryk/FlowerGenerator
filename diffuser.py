@@ -3,9 +3,10 @@ import numpy as np
 from models import Diffuser, LATENT_DIM
 
 IMAGE_DIMS = 64
-DIFFUSION_STEPS = 256
+DIFFUSION_STEPS = 512
 np_data = np.load("./data/arrays_latent.npz")["arr_0"]
-device = "cpu"
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(f"Device Name: {torch.cuda.get_device_name(device)}" if device.type == "cuda" else "CPU")
 dataset = torch.utils.data.TensorDataset(torch.Tensor(np_data))
 loader = torch.utils.data.DataLoader(dataset, batch_size=50, shuffle=True)
 
@@ -21,10 +22,9 @@ def get_alpha_betas(N: int):
 
 def train(nepochs: int=1_000, denoising_steps: int=DIFFUSION_STEPS, save_as: str="./models/diffuser.pth"):
     """Alg 1 from the DDPM paper"""
-    model = Diffuser()
+    model = Diffuser().to(device)
     model.load_state_dict(torch.load('./models/diffuser.pth'))
-    model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     alpha_bars, _ = get_alpha_betas(denoising_steps)      # Precompute alphas
     losses = []
     for epoch in range(nepochs):
@@ -70,7 +70,7 @@ def sample(model, n_samples: int=50, n_steps: int=DIFFUSION_STEPS):
     return x_t
 
 if __name__ == "__main__":
-    trained_model = train(100)
+    trained_model = train(1000)
 
     samples = sample(trained_model, 1).detach().cpu().numpy()
     print(samples)

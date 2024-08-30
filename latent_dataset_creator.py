@@ -12,6 +12,8 @@ model.eval()
 latent_data = model.encoder(data)
 
 latent_data = latent_data.detach().cpu().numpy()
-latent_data = latent_data.reshape(len(latent_data), 128*4*4)
+print(latent_data.shape)
+
+latent_data = latent_data.reshape(len(latent_data), 128*8*8)
 print(latent_data.shape)
 np.savez("./data/arrays_latent.npz", latent_data)

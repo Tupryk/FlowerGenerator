@@ -2,21 +2,21 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from models import Autoencoder, Diffuser
-from diffuser import sample
+from diffuser import sample, device
 
-IMAGE_DIMS = 64
+IMAGE_DIMS = 128
 
 
 def generate_flower():
-    diffuser = Diffuser()
+    diffuser = Diffuser().to(device)
     diffuser.load_state_dict(torch.load('./models/diffuser.pth'))
     diffuser.eval()
     latent_im = sample(diffuser, n_samples=1).detach().cpu().numpy()
     print(latent_im)
-    latent_im = latent_im.reshape(1, 128, 4, 4)
-    latent_im = torch.Tensor(latent_im)
+    latent_im = latent_im.reshape(1, 128, 8, 8)
+    latent_im = torch.Tensor(latent_im).to(device)
 
-    autoencoder = Autoencoder()
+    autoencoder = Autoencoder().to(device)
     autoencoder.load_state_dict(torch.load('./models/autoencoder.pth'))
     autoencoder.eval()
 

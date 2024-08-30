@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-IMAGE_DIMS = 64
-LATENT_DIM = 2048
+IMAGE_DIMS = 128
+LATENT_DIM = 128*8*8
 
 
 class Autoencoder(nn.Module):

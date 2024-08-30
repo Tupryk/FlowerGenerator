@@ -1,16 +1,20 @@
 import os
 import cv2
 import numpy as np
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-IMAGE_DIMS = 64
+IMAGE_DIMS = 128
 
 
 def prepare_dataset():
     data = []
     paths = ["./data/flowers/daisy", "./data/flowers/dandelion",
-             "./data/flowers/rose", "./data/flowers/sunflower", "./data/flowers/tulip"]
-    for path in paths:
+             "./data/flowers/rose", "./data/flowers/sunflower", "./data/flowers/tulip", "./data/flowers/jpg",
+             #"./data/flowers/flower_photos/daisy", "./data/flowers/flower_photos/dandelion", "./data/flowers/flower_photos/roses",
+             #"./data/flowers/flower_photos/sunflowers", "./data/flowers/flower_photos/tulips"
+             ]
+    for path in tqdm(paths):
         for im_file in os.listdir(path):
             image = cv2.imread(f"{path}/{im_file}")
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

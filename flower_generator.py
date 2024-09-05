@@ -2,35 +2,42 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from models import Autoencoder, Diffuser
-from diffuser import sample, device
+from diffuser import sample
 
-IMAGE_DIMS = 128
-
+IMAGE_DIMS = 64
 
 def generate_flower():
-    diffuser = Diffuser().to(device)
-    diffuser.load_state_dict(torch.load('./models/diffuser.pth'))
+    diffuser = Diffuser()
+    diffuser.load_state_dict(torch.load('./models/diffuser_epoch1000.pth'))
     diffuser.eval()
-    latent_im = sample(diffuser, n_samples=1).detach().cpu().numpy()
-    print(latent_im)
-    latent_im = latent_im.reshape(1, 128, 8, 8)
-    latent_im = torch.Tensor(latent_im).to(device)
+    latent_im = sample(diffuser, n_samples=4*4, n_steps=512).detach().cpu().numpy()
+    latent_im = latent_im.reshape(4*4, 128, 4, 4)
+    latent_im = torch.Tensor(latent_im)
 
-    autoencoder = Autoencoder().to(device)
+    autoencoder = Autoencoder()
     autoencoder.load_state_dict(torch.load('./models/autoencoder.pth'))
     autoencoder.eval()
 
-    print(latent_im)
-    image = autoencoder.decoder(latent_im)
+    images = autoencoder.decoder(latent_im)
+    images = torch.nan_to_num(images, nan=0.0)
 
-    image = image.detach().cpu().numpy()
-    print(image)
-    image = np.maximum(image, 0)[0]
-    image = np.transpose(image, (1, 2, 0))
-    return image
-
+    images = images.detach().cpu().numpy()
+    images = np.maximum(images, 0)
+    images = np.minimum(images, 1)
+    return images
 
 if __name__ == "__main__":
-    image = generate_flower()
-    plt.imshow(image)
+    # Create a figure with 4x4 subplots
+    fig, axes = plt.subplots(4, 4, figsize=(10, 10))
+    
+    # Generate and plot each image
+    images = generate_flower()
+    for i in range(4):
+        for j in range(4):
+            image = np.transpose(images[i*4+j], (1, 2, 0))
+            axes[i, j].imshow(image)
+            axes[i, j].axis('off')  # Hide the axis
+    
+    plt.tight_layout()
     plt.show()
+

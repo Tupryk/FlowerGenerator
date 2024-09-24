@@ -14,9 +14,9 @@ loader = torch.utils.data.DataLoader(dataset, batch_size=128, shuffle=True)
 def train(nepochs: int=1_000, denoising_steps: int=DIFFUSION_STEPS, save_as: str="./models/diffuser.pth"):
     """Alg 1 from the DDPM paper"""
     model = Diffuser()
-    # model.load_state_dict(torch.load('./models/diffuser.pth'))
+    model.load_state_dict(torch.load('./models/diffuser_epoch1000.pth'))
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
     scheduler = DDPMScheduler(denoising_steps)
     losses = []
     for epoch in range(nepochs):
@@ -26,8 +26,8 @@ def train(nepochs: int=1_000, denoising_steps: int=DIFFUSION_STEPS, save_as: str
 
             # Fwd pass
             noise = torch.randn(*data.shape, device=device)
-            t = torch.randint(low=0, high=denoising_steps, size=[1])
-            model_in = scheduler.add_noise(data, noise, t)
+            t = torch.randint(low=0, high=denoising_steps, size=(1,))
+            model_in = scheduler.add_noise(data, noise, torch.IntTensor([DIFFUSION_STEPS-1]))
             t = torch.ones(model_in.shape[0], 1) * t
             out = model(model_in, t)
             loss = torch.mean((data - out)**2)
@@ -49,12 +49,19 @@ def train(nepochs: int=1_000, denoising_steps: int=DIFFUSION_STEPS, save_as: str
 
 
 def sample(model, n_samples: int=50, n_steps: int=DIFFUSION_STEPS):
-    noised = torch.randn((n_samples, LATENT_DIM)).to(device)
-    for i in range(n_steps): # Does this have to be inverted??
-        t = torch.ones(n_samples, 1) * (n_steps-1-i)
-        noised = model(noised, t)
+    x = torch.randn((n_samples, LATENT_DIM)).to(device)
+    scheduler = DDPMScheduler(n_steps)
+    with torch.no_grad():
+        for t in reversed(range(n_steps)):
+            timestep = torch.ones(n_samples, 1) * t
+            predicted_denoised_image = model(x, timestep)
+            beta_t = scheduler.betas[t].to(device)
+            alpha_t_bar = scheduler.alphas_cumprod[t].to(device)
 
-    return noised
+            x = predicted_denoised_image * alpha_t_bar.sqrt() + torch.randn_like(x) * beta_t.sqrt() if t > 0 else predicted_denoised_image
+            print("timestamp", t, x)
+
+    return x
 
 if __name__ == "__main__":
     trained_model = train(1000)
